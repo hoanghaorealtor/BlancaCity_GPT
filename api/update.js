@@ -6,6 +6,40 @@ export default async function handler(req, res) {
   try {
     const data = req.body;
     console.log("📥 Nhận dữ liệu từ Drive:", data);
+    if (data.images) {
+  console.log("🖼️ Nhận danh sách ảnh:", data.images);
+
+  const imageSummary = data.images.map(img => `![${img.name}](${img.url})`).join('\n');
+
+  const updateResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "Bạn là trợ lý Blanca City, hiển thị hình ảnh minh họa tương ứng khi mô tả dự án."
+        },
+        {
+          role: "user",
+          content: `Cập nhật danh sách hình ảnh mới:\n${imageSummary}`
+        }
+      ]
+    })
+  });
+
+  const result = await updateResponse.json();
+  return res.status(200).json({
+    message: "✅ Danh sách hình ảnh đã được gửi thành công!",
+    count: data.images.length,
+    result
+  });
+}
+
 
     // Kiểm tra dữ liệu
     if (!data.file && !data.updates) {
