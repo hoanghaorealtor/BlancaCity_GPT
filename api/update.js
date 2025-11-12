@@ -1,21 +1,3 @@
-//export default async function handler(req, res) {
-//  if (req.method !== "POST") {
-    //return res.status(405).json({ message: "Method not allowed" });
-  //}
-
-  //try {
-    //const data = req.body;
-    //console.log("📥 Nhận dữ liệu từ Drive:", data);
-
-    //res.status(200).json({
-//      message: "✅ Dữ liệu đã được nhận thành công!",
-  //    received: data.updates?.length || 0
-    //});
-  //} catch (error) {
-    //console.error("❌ Lỗi:", error);
-    //res.status(500).json({ message: "Lỗi xử lý dữ liệu", error: error.message });
-//  }
-//}
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method not allowed" });
@@ -25,12 +7,11 @@ export default async function handler(req, res) {
     const data = req.body;
     console.log("📥 Nhận dữ liệu từ Drive:", data);
 
-    // 1️⃣ Kiểm tra dữ liệu đầu vào
+    // Kiểm tra dữ liệu
     if (!data.file && !data.updates) {
       return res.status(400).json({ message: "Không có dữ liệu hợp lệ." });
     }
 
-    // 2️⃣ Tạo nội dung mô tả để cập nhật GPT Blanca City
     const file = data.file || data.updates?.[0];
     const contentSummary = `
 📘 Cập nhật dữ liệu mới cho Blanca City:
@@ -41,13 +22,41 @@ export default async function handler(req, res) {
 - Link Drive: ${file.link}
 
 📄 Nội dung / Ghi chú:
-${file.summary || file.content?.substring(0, 3000) || "Không có nội dung tóm tắt."}
+${file.summary || file.content?.substring(0, 2000) || "Không có nội dung tóm tắt."}
 `;
 
-    // 3️⃣ Gửi yêu cầu cập nhật đến GPT Blanca City
-    const updateResponse = await fetch("https://api.openai.com/v1/gizmos/update_behavior", {
+    // Gửi đến OpenAI Chat API để kiểm thử
+    const updateResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bea
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "Bạn là trợ lý Blanca City, chuyên ghi nhận và xử lý dữ liệu dự án."
+          },
+          {
+            role: "user",
+            content: contentSummary
+          }
+        ]
+      })
+    });
+
+    const result = await updateResponse.json();
+    console.log("✅ Phản hồi từ GPT:", result);
+
+    return res.status(200).json({
+      message: "✅ Dữ liệu đã được gửi đến GPT Blanca City thành công!",
+      result
+    });
+
+  } catch (error) {
+    console.error("❌ Lỗi:", error);
+    return res.status(500).json({ message: "Lỗi xử lý dữ liệu", error: error.message });
+  }
 }
