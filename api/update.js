@@ -50,3 +50,4 @@ ${file.summary || file.content?.substring(0, 3000) || "Không có nội dung tó
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bea
+}
